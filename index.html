@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>シャーク巫女の3分の1ランダム運勢メーカー</title>
+
+<!-- OGP / Xカード -->
+<meta property="og:title" content="シャーク巫女の3分の1運勢メーカー">
+<meta property="og:description" content="シャーク巫女が3つの姿から今日の運勢をランダム診断してくれるお遊びページ。">
+<meta property="og:type" content="website">
+<!-- ★ここはあなたが用意したOGP画像URLに差し替え -->
+<meta property="og:image" content="https://example.com/ogp_shark_fortune.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="シャーク巫女の3分の1運勢メーカー">
+<meta name="twitter:description" content="3つのシャーク巫女から今日の運勢をランダム診断。成金？祝福？それとも…？">
+
+<style>
+body {
+    background: #f3e9d7;
+    font-family: "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+    text-align: center;
+    padding-top: 40px;
+    margin: 0;
+}
+
+h1 {
+    font-size: 26px;
+    margin-bottom: 8px;
+}
+
+#subtitle {
+    font-size: 14px;
+    color: #775;
+    margin-bottom: 20px;
+}
+
+#controls {
+    margin-bottom: 12px;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #ffd45e;
+    box-shadow: 0 3px 0 #c9a842;
+    margin: 4px;
+}
+button:hover {
+    background: #ffcc3f;
+}
+button:disabled {
+    opacity: 0.6;
+    cursor: default;
+    box-shadow: none;
+}
+
+#result-card {
+    width: 340px;
+    margin: 0 auto;
+    margin-top: 16px;
+    padding: 16px 10px 20px;
+    border-radius: 18px;
+    background: #fff7e6;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    transition: background 0.4s ease;
+}
+
+#result-img {
+    width: 260px;
+    height: 260px;
+    object-fit: contain;
+    border-radius: 20px;
+    display: none;
+}
+
+#fortune-name {
+    font-size: 18px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#fortune-text {
+    font-size: 16px;
+    margin-top: 6px;
+    min-height: 44px;
+}
+
+#lucky-item {
+    font-size: 15px;
+    margin-top: 10px;
+    color: #555;
+}
+
+#status {
+    font-size: 13px;
+    margin-top: 6px;
+    color: #996;
+    min-height: 18px;
+}
+
+/* 当たり時の光る演出 */
+.hit-glow {
+    animation: glow 0.8s ease-out;
+}
+@keyframes glow {
+    0%   { transform: scale(1);   box-shadow: 0 0 0 rgba(255, 230, 120, 0.0); }
+    40%  { transform: scale(1.06); box-shadow: 0 0 30px rgba(255, 230, 120, 0.9); }
+    100% { transform: scale(1);   box-shadow: 0 0 0 rgba(255, 230, 120, 0.0); }
+}
+
+/* Xボタンっぽい色 */
+#share-x {
+    background: #111;
+    color: #fff;
+    box-shadow: 0 3px 0 #000;
+}
+#share-x:hover {
+    background: #222;
+}
+
+footer {
+    font-size: 11px;
+    color: #999;
+    margin-top: 18px;
+}
+
+/* スマホ向け調整 */
+@media (max-width: 480px) {
+    body {
+        padding-top: 24px;
+    }
+    #result-card {
+        width: 90%;
+        padding: 14px 8px 18px;
+    }
+    #result-img {
+        width: 80%;
+        height: auto;
+    }
+    button {
+        width: 80%;
+        max-width: 320px;
+    }
+}
+</style>
+</head>
+<body>
+
+<h1>🔮 シャーク巫女の3分の1運勢メーカー</h1>
+<div id="subtitle">ボタンを押すと、3つの姿からランダムで今日の運勢が決まるよ。</div>
+
+<div id="controls">
+    <button id="btn-fortune" onclick="drawFortune()">運勢を占う！</button>
+    <button id="share-x" onclick="shareOnX()">Xで結果をシェア</button>
+</div>
+
+<div id="result-card">
+    <img id="result-img" src="" alt="result">
+    <div id="fortune-name"></div>
+    <div id="fortune-text"></div>
+    <div id="lucky-item"></div>
+    <div id="status"></div>
+</div>
+
+<footer>※音が出るので音量に注意してね（Suno製SE推奨）</footer>
+
+<!-- Suno で作った SE をここに置く -->
+<audio id="se-spin" src="roulette_spin.mp3" preload="auto"></audio>
+<audio id="se-hit"  src="roulette_hit.mp3"  preload="auto"></audio>
+
+<script>
+// ★ あなたの世界観に合わせた運勢定義
+// 先頭3つが通常、最後の1つが超レア（出現1%）
+const fortunes = [
+    {
+        name: "ミステリアスシャーク（Type A）",
+        img: "悪魔.png",
+        messages: [
+            "今日は何かいつも以上に注意した方がよさげ。背後から名前を呼ばれても振り返っちゃダメ。",
+            "気配が一瞬強い日。気になる場所には近づかず、光のある方向へ。",
+            "直感が不穏を察知してるかも。『危なそう』と思ったら即退避。",
+            "なぜか今日は“物”が落ちやすい日。落としたら拾う前に一回見つめて。",
+            "あなたの影が少し長くなる日。影の方はあまり見つめないでおこう。"
+        ],
+        luckies: [
+            "ラッキーアイテム：光る石",
+            "ラッキーアイテム：古びた鈴",
+            "ラッキーアイテム：赤いアクセサリー",
+            "ラッキーアイテム：黒糖キャンディー（落ち着く）",
+            "ラッキーアイテム：逆向きに置いたお守り"
+        ],
+        bgColor: "#ffe5e5",
+        share: "シャーク巫女占い：ミステリアスシャークの運勢を引きました。"
+    },
+    {
+        name: "ゴールドシャーク（Type B）",
+        img: "金の亡者.png",
+        messages: [
+            "あなたは今日も金の亡者。財布が軽くなる前兆あり、慎重に。",
+            "欲望ゲージが通常より3倍増し。無駄遣いに気をつけよう。",
+            "つい散財しそう。『まあいっか』は禁句の日。",
+            "今日は“お得”という言葉に弱い日。落ち着いて深呼吸しよう。",
+            "買わない予定の物ほど呼んでくる日。誘惑に勝てば運気UP。"
+        ],
+        luckies: [
+            "ラッキーアイテム：硬貨を1枚だけ持つ",
+            "ラッキーアイテム：キラキラした小物",
+            "ラッキーアイテム：金色の紙片（なんでも可）",
+            "ラッキーアイテム：節約アプリを開くこと",
+            "ラッキーアイテム：ミニ財布"
+        ],
+        bgColor: "#fff4bf",
+        share: "シャーク巫女占い：ゴールドシャークの運勢を引きました。"
+    },
+    {
+        name: "ブレスシャーク（Type C）",
+        img: "祝福の女神.png",
+        messages: [
+            "美しいオーラが出ていて、今日はいつも以上に乗って行けます！",
+            "気持ちが軽くなる日。人に優しくすると倍返しで福が返ってくるよ。",
+            "あなたの雰囲気がやわらかい光に包まれる日。やさしさが吉。",
+            "誰かを助けると自分にも良い風が吹きそう。",
+            "今日は『ありがとう』を言う回数が多いほど運気UP。"
+        ],
+        luckies: [
+            "ラッキーアイテム：交流（会話すると吉）",
+            "ラッキーアイテム：香りの良い飲み物",
+            "ラッキーアイテム：淡い色の服",
+            "ラッキーアイテム：優しい音楽",
+            "ラッキーアイテム：紙の手帳"
+        ],
+        bgColor: "#e9f5ff",
+        share: "シャーク巫女占い：ブレスシャークの運勢を引きました。"
+    },
+    // ★ 超レア（1%）シャーク覚醒。今は祝福画像を流用、あとで専用イラストに差し替えてOK
+    {
+        name: "シャーク覚醒（Type S / レア）",
+        img: "Sレア.png",
+        messages: [
+            "深淵から力を引き出す日。大きな決断も前向きに検討して良さそう。",
+            "シャーク巫女と波長がシンクロ中。やりたいことを一歩だけ前に進めてみて。",
+            "今日は“ここぞ”の勝負運が光るタイミング。無茶はせず、狙いを定めて。"
+        ],
+        luckies: [
+            "ラッキーアイテム：いつもより少し特別な一杯",
+            "ラッキーアイテム：新しく開いたメモ帳の1ページ目",
+            "ラッキーアイテム：深呼吸3回と小さなガッツポーズ"
+        ],
+        bgColor: "#ffe8ff",
+        share: "シャーク巫女占い：超レア・シャーク覚醒（Type S）を引きました！"
+    }
+];
+
+let lastFortune = null;      // Xシェア用
+let lastFortuneIndex = null; // URLパラメータ用
+let rouletteTimer = null;    // 点滅用タイマー
+
+// ランダムで通常3種＋1%でレアを返す
+function pickRandomIndex() {
+    const rareIndex = fortunes.length - 1;   // 最後をレア扱い
+    const normalCount = fortunes.length - 1; // 先頭～レア直前が通常
+
+    const r = Math.random();
+    if (fortunes.length >= 4 && r < 0.01) {
+        return rareIndex; // 1%レア
+    } else {
+        return Math.floor(Math.random() * normalCount); // 通常
+    }
+}
+
+// インデックスから、実際に表示するメッセージ付きオブジェクトを作る
+function resolveFortune(index) {
+    const f = fortunes[index];
+    const msg   = f.messages[Math.floor(Math.random() * f.messages.length)];
+    const lucky = f.luckies[Math.floor(Math.random() * f.luckies.length)];
+    return { ...f, msg, lucky, index };
+}
+
+// 画面に結果を反映する共通処理
+function renderFortune(result, options = {}) {
+    const { playHitSound = true, viaShareLink = false } = options;
+
+    const img = document.getElementById("result-img");
+    const nameEl = document.getElementById("fortune-name");
+    const textEl = document.getElementById("fortune-text");
+    const luckyEl = document.getElementById("lucky-item");
+    const statusEl = document.getElementById("status");
+    const card = document.getElementById("result-card");
+
+    img.src = result.img;
+    img.style.display = "block";
+    nameEl.textContent = result.name;
+    textEl.textContent = result.msg;
+    luckyEl.textContent = result.lucky;
+    card.style.background = result.bgColor;
+    statusEl.textContent = viaShareLink ? "シェアされた結果を表示中！" : "結果が出ました！";
+
+    img.classList.remove("hit-glow");
+    void img.offsetWidth; // reflow
+    img.classList.add("hit-glow");
+
+    if (playHitSound) {
+        const seHit  = document.getElementById("se-hit");
+        try {
+            seHit.currentTime = 0;
+            seHit.play();
+        } catch(e) {}
+    }
+}
+
+function drawFortune() {
+    const btn = document.getElementById("btn-fortune");
+    const img = document.getElementById("result-img");
+    const nameEl = document.getElementById("fortune-name");
+    const textEl = document.getElementById("fortune-text");
+    const luckyEl = document.getElementById("lucky-item");
+    const statusEl = document.getElementById("status");
+    const card = document.getElementById("result-card");
+
+    // ボタン連打防止
+    btn.disabled = true;
+    statusEl.textContent = "ルーレット回転中…";
+    luckyEl.textContent = "";
+    nameEl.textContent = "";
+    textEl.textContent = "";
+
+    // 見た目リセット
+    card.style.background = "#fff7e6";
+    img.classList.remove("hit-glow");
+    img.style.display = "block";
+
+    // SE再生（回転音）
+    const seSpin = document.getElementById("se-spin");
+    const seHit  = document.getElementById("se-hit");
+    try {
+        seHit.pause();
+        seHit.currentTime = 0;
+        seSpin.currentTime = 0;
+        seSpin.play();
+    } catch(e) {}
+
+    // ★ ルーレット高速点滅（約1.2秒）
+    let idx = 0;
+    const flashInterval = 90;   // ms
+    const flashDuration = 1200; // ms
+
+    if (rouletteTimer) clearInterval(rouletteTimer);
+    rouletteTimer = setInterval(() => {
+        const f = fortunes[idx % fortunes.length];
+        img.src = f.img;
+        idx++;
+    }, flashInterval);
+
+    // 一定時間後に本当の結果を抽選して停止
+    setTimeout(() => {
+        clearInterval(rouletteTimer);
+        rouletteTimer = null;
+
+        const index = pickRandomIndex();
+        const result = resolveFortune(index);
+
+        lastFortune = result;
+        lastFortuneIndex = index;
+
+        // 回転音停止 → 当たり音再生は renderFortune 内で
+        try {
+            seSpin.pause();
+            seSpin.currentTime = 0;
+        } catch(e) {}
+
+        renderFortune(result, { playHitSound: true, viaShareLink: false });
+
+        // 少し待ってからボタン再び押せるように
+        setTimeout(() => { btn.disabled = false; }, 300);
+    }, flashDuration);
+}
+
+// X（Twitter）でシェア
+function shareOnX() {
+    if (!lastFortune) {
+        alert("まずは「運勢を占う！」ボタンを押して結果を出してね。");
+        return;
+    }
+    const text =
+        lastFortune.share + " " +
+        lastFortune.msg + " " +
+        lastFortune.lucky + " #シャーク巫女占い";
+
+    // ?f=インデックス を付与して、開いた人にも同じ種類が出るようにする
+    const baseUrl = location.origin + location.pathname;
+    const url = baseUrl + "?f=" + encodeURIComponent(lastFortuneIndex);
+
+    const shareUrl =
+        "https://twitter.com/intent/tweet?text=" +
+        encodeURIComponent(text) +
+        "&url=" +
+        encodeURIComponent(url);
+
+    window.open(shareUrl, "_blank");
+}
+
+// ページ読み込み時：URLに ?f= があれば、その結果を表示
+window.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(location.search);
+    const fParam = params.get("f");
+    if (fParam !== null) {
+        const index = parseInt(fParam, 10);
+        if (!Number.isNaN(index) && index >= 0 && index < fortunes.length) {
+            const result = resolveFortune(index);
+            lastFortune = result;
+            lastFortuneIndex = index;
+            renderFortune(result, { playHitSound: false, viaShareLink: true });
+        }
+    }
+});
+</script>
+
+</body>
+</html>
