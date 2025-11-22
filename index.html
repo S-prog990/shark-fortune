@@ -388,31 +388,18 @@ function drawFortune() {
 // X（Twitter）でシェア（読みやすい改行つき）
 function shareOnX() {
     if (!lastFortune) {
-        alert("まずは「運勢を占う！」ボタンを押して結果を出してね。");
+        alert("占い結果を先に出してね！");
         return;
     }
 
-    // 現在の結果インデックスが fortune の何番か取得
-    const lastFortuneIndex = fortunes.indexOf(lastFortune);
+    const imgURL = "https://s-prog990.github.io/shark-fortune/" + lastFortune.img;
 
-    // 読みやすい改行とラベル付きテキストに整形
-    const text =
-`🦈シャーク巫女占い
-【今日の結果】${lastFortune.name}
-今日のひとこと：${lastFortune.msg}
-${lastFortune.lucky}
-#シャーク巫女占い`;
-
-    // URLに f=番号 を付けて、他の人に同じ結果が表示されるように
-    const baseUrl = location.origin + location.pathname;
-    const url = `${baseUrl}?f=${encodeURIComponent(lastFortuneIndex)}`;
-
-    // シェアリンク生成
+    const text = lastFortune.share + " #シャーク巫女占い";
     const shareUrl =
         "https://twitter.com/intent/tweet?text=" +
         encodeURIComponent(text) +
         "&url=" +
-        encodeURIComponent(url);
+        encodeURIComponent(imgURL);
 
     window.open(shareUrl, "_blank");
 }
@@ -435,6 +422,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
 
 
 
