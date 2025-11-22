@@ -379,20 +379,29 @@ function drawFortune() {
 }
 
 // X（Twitter）でシェア
+// X（Twitter）でシェア（読みやすい改行つき）
 function shareOnX() {
     if (!lastFortune) {
         alert("まずは「運勢を占う！」ボタンを押して結果を出してね。");
         return;
     }
+
+    // 現在の結果インデックスが fortune の何番か取得
+    const lastFortuneIndex = fortunes.indexOf(lastFortune);
+
+    // 読みやすい改行とラベル付きテキストに整形
     const text =
-        lastFortune.share + " " +
-        lastFortune.msg + " " +
-        lastFortune.lucky + " #シャーク巫女占い";
+`🦈シャーク巫女占い
+【今日の結果】${lastFortune.name}
+今日のひとこと：${lastFortune.msg}
+${lastFortune.lucky}
+#シャーク巫女占い`;
 
-    // ?f=インデックス を付与して、開いた人にも同じ種類が出るようにする
+    // URLに f=番号 を付けて、他の人に同じ結果が表示されるように
     const baseUrl = location.origin + location.pathname;
-    const url = baseUrl + "?f=" + encodeURIComponent(lastFortuneIndex);
+    const url = `${baseUrl}?f=${encodeURIComponent(lastFortuneIndex)}`;
 
+    // シェアリンク生成
     const shareUrl =
         "https://twitter.com/intent/tweet?text=" +
         encodeURIComponent(text) +
@@ -420,3 +429,4 @@ window.addEventListener("DOMContentLoaded", () => {
 
 </body>
 </html>
+
